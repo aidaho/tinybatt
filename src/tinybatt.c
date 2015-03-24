@@ -14,7 +14,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#define __USE_GNU  // declare GNU extensions
+#define _GNU_SOURCE  // declare GNU extensions
 #include <stdio.h>  // FILENAME_MAX
 #include <stdlib.h>  // exit(), EXIT_SUCCESS
 #include <string.h>  // strrchr()
@@ -69,7 +69,7 @@ int get_int_from_file(char *filepath) {
 	return result;
 }
 
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
 	// Figure out program name:
 	if ((program_name = strrchr(argv[0], '/')) == NULL)
