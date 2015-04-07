@@ -38,7 +38,7 @@ void print_version()
 void print_help()
 /* Prints help text. */
 {
-	printf ("\nusage: %s [-hvw] \n", program_name);
+	printf ("\nusage: %s [-hvd] \n", program_name);
 	printf ("\n");
 	printf ("%s shows brief one-line battery information.\n", program_name);
 	printf ("The output is meant to be included in some text-based interface (like tmux)\n");
@@ -46,6 +46,7 @@ void print_help()
 	printf ("command line options:\n");
 	printf (" -v : print version\n");
 	printf (" -h : this help\n");
+	printf (" -d[0..n] : display rate of discharge if it exceeds optional parameter\n");
 	printf ("\n");
 	printf ("for more details please visit: https://github.com/aidaho\n");
 	printf ("(c) Sergey Frolov, 2015\n");
@@ -87,6 +88,29 @@ char * get_first_line_from_file(char *filepath) {
 	return result;
 }
 
+char * squash_int_to_str(int n) {
+	/* Converts integer to some (short and rounded) string representation. */
+	char c = 'x', abbrevs[] = DRAW_ABBREVS, *result, *r_ptr, *a_ptr;
+	int words = 0;
+	result = (char *) malloc(MAX_ABBREV_LEN);
+	a_ptr = abbrevs;
+
+	while (words < n && c != '\0') {  // walk through abbrevs
+		r_ptr = result;
+
+		while ((c=*a_ptr++) != ' ' && c != '\0') {
+			*r_ptr++ = c;  // copy abbrev char to result
+		}
+		*r_ptr = '\0';
+		if (++words == n)  // is this an abbrev we need?
+			return result;
+	}
+
+	// No corresponding abbrev found, fallback:
+	sprintf(result, "%d", n);
+	return result;
+}
+
 int main (int argc, char *argv[])
 {
 	// Figure out program name:
@@ -96,7 +120,8 @@ int main (int argc, char *argv[])
 		++program_name;  // move pointer to char after '/'
 
 	char option;
-	while ((option = getopt(argc, argv, "h")) != EOF)
+	int rate_output = 0, rate_threshold = 0;
+	while ((option = getopt(argc, argv, "hvd::")) != EOF)
 	{
 		switch (option)
 		{
@@ -106,11 +131,17 @@ int main (int argc, char *argv[])
 		case 'h':
 			print_help();
 			exit(EXIT_SUCCESS);
+		case 'r':
+			rate_output = 1;
+			if (optarg) {
+				rate_threshold = strtol(optarg, NULL, 10);
+			}
 		}
 	}
 
 	char *fpath, *bat_status, output_part[32], output[255] = "";
-	int remaining_capacity, last_capacity, percentage, charging, warning;
+	int remaining_capacity, last_capacity, percentage, rate, charging,
+		discharging, warning;
 
 	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_REMAINING_CAPACITY);
 	remaining_capacity = get_int_from_file(fpath) / CAPACITY_DIVIDER;
@@ -126,15 +157,28 @@ int main (int argc, char *argv[])
 	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_STATUS);
 	bat_status = get_first_line_from_file(fpath);
 
+	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_DISCHARGE_RATE);
+	rate = ceil(get_int_from_file(fpath) / RATE_DIVIDER);
+
 	charging = strstr(bat_status, CHARGING_STATUS) != NULL;
+	discharging = strstr(bat_status, DISCHARGING_STATUS) != NULL;
 	warning = percentage <= 10;
 
+
 	/* Construct output */
+	if (discharging) {
+		if (rate_output && rate >= rate_threshold) {
+			sprintf(output_part, "%s ", squash_int_to_str(rate));
+			strcat(output, output_part);
+		}
+		if (warning) {
+			strcat(output, WARNING_STRING);
+		} else {
+			strcat(output, DISCHARGING_STRING);
+		}
+	}
 	if (charging) {
 		strcat(output, CHARGING_STRING);
-	}
-	if (warning && !charging) {
-		strcat(output, WARNING_STRING);
 	}
 	sprintf(output_part, "%d%%", percentage);
 	strcat(output, output_part);
