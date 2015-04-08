@@ -10,3 +10,9 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 add_executable(tinybatt tinybatt.c)
 target_link_libraries(tinybatt m)
+
+install(
+  TARGETS tinybatt
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  )

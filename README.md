@@ -23,11 +23,14 @@ something to play with while learning C.
 *   **tmux**: insert `#(/path/to/tinybatt)` somewhere in your status(-left/right) template
 
 ### Installation
-*   **From source:** **tinybatt** is written in pure C and does not require
+1.  **Build from source:** `tinybatt` is written in pure C and does not require
     anything above `libc` and `cmake` to build. Run the following from the
     project root directory: `cmake -G "Unix Makefiles" && make`
-
-That's it! The executable will end up at `src/tinybatt`
+2.  **Build packages:** run `cpack`. You will get DEB, RPM and TGZ packages.`
+3.  **Install package:**
+    * **Debian:** run `sudo dpkg -i tinybatt*.deb`
+    * **Red Hat:** run `sudo rpm -i tinybatt*.rpm`
+    * **Manual:** binary will end up at `src/tinybatt`
 
 ### Notes
     The exact representation of Unicode symbols depend on your fonts.

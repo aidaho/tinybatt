@@ -1,0 +1,2 @@
+TinyBatt is a micro binary that displays brief one-line battery information.
+It can optionally indicate discharge rate. Output example: "➉ ⚡77%".
