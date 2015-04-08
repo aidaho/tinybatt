@@ -1,5 +1,3 @@
-#define VERSION "0.0.1"
-
 #define BATTERY_PATH "/sys/class/power_supply/BAT0"
 #define BATTERY_REMAINING_CAPACITY "energy_now"
 #define BATTERY_DISCHARGE_RATE "power_now"

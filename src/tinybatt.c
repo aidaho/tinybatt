@@ -21,6 +21,7 @@
 #include <unistd.h>  // getopt()
 #include <math.h>  // ceil()
 #include "tinybatt.h"
+#include "config.h"
 
 char *program_name;
 int debug = 0;  /**< debug flag */

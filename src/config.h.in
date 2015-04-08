@@ -1,0 +1,4 @@
+#define VERSION_MAJOR @TinyBatt_MAJOR_VERSION@
+#define VERSION_MINOR @TinyBatt_MINOR_VERSION@
+#define VERSION_PATCH @TinyBatt_PATCH_VERSION@
+#define VERSION "@TinyBatt_VERSION@"
