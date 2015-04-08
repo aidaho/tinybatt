@@ -30,7 +30,7 @@ void print_version()
 {
 	printf ("\n%s, version %s [-hvw] \n", program_name, VERSION);
 	printf ("Copyright (C) 2015 Sergey Frolov\n");
-	printf ("for more details please visit: https://github.com/aidaho\n");
+	printf ("for more details please visit: https://github.com/aidaho/tinybatt\n");
 	printf ("License: GPLv3: <http://www.gnu.org/licenses/gpl-3.0.html>\n");
 	printf ("\n");
 }
@@ -38,7 +38,7 @@ void print_version()
 void print_help()
 /* Prints help text. */
 {
-	printf ("\nusage: %s [-hvd] \n", program_name);
+	printf ("\nusage: %s [-hvrd] \n", program_name);
 	printf ("\n");
 	printf ("%s shows brief one-line battery information.\n", program_name);
 	printf ("The output is meant to be included in some text-based interface (like tmux)\n");
@@ -46,7 +46,8 @@ void print_help()
 	printf ("command line options:\n");
 	printf (" -v : print version\n");
 	printf (" -h : this help\n");
-	printf (" -d[0..n] : display rate of discharge if it exceeds optional parameter\n");
+	printf (" -r[0..n] : display rate of discharge if it exceeds optional parameter\n");
+	printf (" -d : debug\n");
 	printf ("\n");
 	printf ("for more details please visit: https://github.com/aidaho\n");
 	printf ("(c) Sergey Frolov, 2015\n");
@@ -121,7 +122,8 @@ int main (int argc, char *argv[])
 
 	char option;
 	int rate_output = 0, rate_threshold = 0;
-	while ((option = getopt(argc, argv, "hvd::")) != EOF)
+	opterr = 0;
+	while ((option = getopt(argc, argv, "hvdr::")) != EOF)
 	{
 		switch (option)
 		{
@@ -131,11 +133,18 @@ int main (int argc, char *argv[])
 		case 'h':
 			print_help();
 			exit(EXIT_SUCCESS);
+		case 'd':
+			debug = 1;
+			break;
 		case 'r':
 			rate_output = 1;
-			if (optarg) {
+			if (optarg)
 				rate_threshold = strtol(optarg, NULL, 10);
-			}
+			break;
+		case '?':
+			fprintf (stderr, "%s: invalid option: %c\n\n", program_name, optopt);
+			print_help();
+			exit(EXIT_FAILURE);
 		}
 	}
 
@@ -151,7 +160,7 @@ int main (int argc, char *argv[])
 
 	/* I've tried a couple of userspace notifiers and it seems the general
 	 consensus is to round upwards. I guess pulling the cord and watching
-	 how indicator goes from 100 to 99 twice as fast is frustrating. */
+	 indicator goes from 100 to 99 twice as fast is frustrating. */
 	percentage = ceil(remaining_capacity / (last_capacity / 100));
 
 	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_STATUS);
