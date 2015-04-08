@@ -16,8 +16,8 @@ something to play with while learning C.
     * discharging ![discharging](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/discharging.png)
     * warning ![warning](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/warning.png)
 *   Discharge rate indicator ![discharge-rate](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/discharge-rate.png).
-    Sometimes after s2ram my notebook starts eating through battery really fast, this
-    indicator pops up after discharge rate exceeds specified limit (in watts).
+    Sometimes, after s2ram my notebook starts eating through battery really fast, this
+    indicator designed to pop up after discharge rate exceeds specified limit (in watts).
 
 ### Integration
 *   **tmux**: insert `#(/path/to/tinybatt)` somewhere in your status(-left/right) template
