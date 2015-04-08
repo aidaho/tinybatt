@@ -19,5 +19,13 @@ something to play with while learning C.
     Sometimes after s2ram my notebook starts eating through battery really fast, this
     indicator pops up after discharge rate exceeds specified limit (in watts).
 
+### Integration
+*   **tmux**: insert "#(/path/to/tinybatt)" somewhere in your status(-left/right) line template
+
+### Installation
+**tinybatt** is written in pure C and does not require anything above `libc`.
+
+Compile it by executing `make` in `/src` directory and grab compiled binary.
+
 ### Notes
     The exact representation of unicode symbols depend on your fonts.
