@@ -20,11 +20,32 @@
 #include <string.h>  // strrchr()
 #include <unistd.h>  // getopt()
 #include <math.h>  // ceil()
+#include <dirent.h>  // scandir()
+#include <stdbool.h>
 #include "tinybatt.h"
 #include "config.h"
 
 char *program_name;
-int debug = 0;  /**< debug flag */
+bool debug = false;  ///< debug flag
+
+typedef struct battery_t
+/* Represents a single battery. */
+{
+	int remaining_capacity;
+	int last_capacity;
+	int percentage;
+	int rate;  ///< rate of discharge
+	int charging;
+	int discharging;
+	int warning;
+	char *status;  ///< OS-provided status string
+	char output[255];  ///< will be included in program output
+} battery_t;
+
+battery_t *batteries[MAX_BATTERY_COUNT];
+bool rate_output = false;  ///< controls display of discharge rate
+int rate_threshold = 0;  ///< rate indicator will appear when value exceeded
+
 
 void print_version()
 /* Prints version information. */
@@ -48,7 +69,7 @@ void print_help()
 	printf (" -v : print version\n");
 	printf (" -h : this help\n");
 	printf (" -r[0..n] : display rate of discharge if it exceeds optional parameter\n");
-	printf (" -d : debug\n");
+	printf (" -d : debug. For developers only.\n");
 	printf ("\n");
 	printf ("for more details please visit: https://github.com/aidaho\n");
 	printf ("(c) Sergey Frolov, 2015\n");
@@ -112,8 +133,78 @@ char * squash_int_to_str(int n)
 	}
 
 	// No corresponding abbrev found, fallback:
-	sprintf(result, "%d", n);
+	snprintf(result, MAX_ABBREV_LEN, "%d", n);
 	return result;
+}
+
+int bat_dir_filter(const struct dirent *dirent)
+/*
+  Directory filter for scandir().
+
+   Looks for directories which name starts with BATTERY_DIR_PREFIX.
+ */
+{
+	size_t prefix_length;
+	char prefix[] = BATTERY_DIR_PREFIX;
+
+	prefix_length = strlen(prefix);  // length without trailing '\0'
+	if (memcmp(&dirent->d_name, &prefix, prefix_length) == 0)
+		return 1;
+	return 0;
+}
+
+int prepare_battery_output(battery_t *bat)
+/* Fills out output field in battery structure */
+{
+	char output_part[OUTPUT_BUFFER_LEN] = "";
+
+	/* Construct output */
+	if (bat->discharging) {
+		if (rate_output && bat->rate >= rate_threshold) {
+			snprintf(output_part, OUTPUT_BUFFER_LEN, "%s ", squash_int_to_str(bat->rate));
+			strcat(bat->output, output_part);
+		}
+		if (bat->warning) {
+			strcat(bat->output, WARNING_STRING);
+		} else {
+			strcat(bat->output, DISCHARGING_STRING);
+		}
+	}
+	if (bat->charging) {
+		strcat(bat->output, CHARGING_STRING);
+	}
+	snprintf(output_part, OUTPUT_BUFFER_LEN, "%d%%", bat->percentage);
+	strcat(bat->output, output_part);
+}
+
+battery_t * process_battery(char *battpath)
+/* Deals with supplied battery directory by filing out corresponding struct. */
+{
+	char *fpath;
+	battery_t *bat = (battery_t *) malloc(sizeof(battery_t));
+
+	asprintf(&fpath, "%s/%s", battpath, BATTERY_REMAINING_CAPACITY);
+	bat->remaining_capacity = get_int_from_file(fpath) / CAPACITY_DIVIDER;
+
+	asprintf(&fpath, "%s/%s", battpath, BATTERY_LAST_CAPACITY);
+	bat->last_capacity = get_int_from_file(fpath) / CAPACITY_DIVIDER;
+
+	/* I've tried a couple of userspace notifiers and it seems the general
+	 consensus is to round upwards. I guess pulling the cord and watching
+	 indicator goes from 100 to 99 twice as fast is frustrating. */
+	bat->percentage = ceil(bat->remaining_capacity / (bat->last_capacity / 100));
+
+	asprintf(&fpath, "%s/%s", battpath, BATTERY_STATUS);
+	bat->status = get_first_line_from_file(fpath);
+
+	asprintf(&fpath, "%s/%s", battpath, BATTERY_DISCHARGE_RATE);
+	bat->rate = ceil(get_int_from_file(fpath) / RATE_DIVIDER);
+
+	bat->charging = strstr(bat->status, CHARGING_STATUS) != NULL;
+	bat->discharging = strstr(bat->status, DISCHARGING_STATUS) != NULL;
+	bat->warning = bat->percentage <= 10;
+
+	return bat;
 }
 
 int main (int argc, char *argv[])
@@ -125,7 +216,6 @@ int main (int argc, char *argv[])
 		++program_name;  // move pointer to char after '/'
 
 	char option;
-	int rate_output = 0, rate_threshold = 0;
 	opterr = 0;
 	while ((option = getopt(argc, argv, "hvdr::")) != EOF)
 	{
@@ -138,63 +228,53 @@ int main (int argc, char *argv[])
 			print_help();
 			exit(EXIT_SUCCESS);
 		case 'd':
-			debug = 1;
+			debug = true;
 			break;
 		case 'r':
-			rate_output = 1;
+			rate_output = true;
 			if (optarg)
 				rate_threshold = strtol(optarg, NULL, 10);
 			break;
 		case '?':
-			fprintf (stderr, "%s: invalid option: %c\n\n", program_name, optopt);
+			fprintf(stderr, "%s: invalid option: %c\n\n", program_name, optopt);
 			print_help();
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	char *fpath, *bat_status, output_part[32], output[255] = "";
-	int remaining_capacity, last_capacity, percentage, rate, charging,
-		discharging, warning;
 
-	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_REMAINING_CAPACITY);
-	remaining_capacity = get_int_from_file(fpath) / CAPACITY_DIVIDER;
+	int dirnum;
+	struct dirent **directories;  // pointer to array of pointers to dirent
 
-	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_LAST_CAPACITY);
-	last_capacity = get_int_from_file(fpath) / CAPACITY_DIVIDER;
-
-	/* I've tried a couple of userspace notifiers and it seems the general
-	 consensus is to round upwards. I guess pulling the cord and watching
-	 indicator goes from 100 to 99 twice as fast is frustrating. */
-	percentage = ceil(remaining_capacity / (last_capacity / 100));
-
-	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_STATUS);
-	bat_status = get_first_line_from_file(fpath);
-
-	asprintf(&fpath, "%s/%s", BATTERY_PATH, BATTERY_DISCHARGE_RATE);
-	rate = ceil(get_int_from_file(fpath) / RATE_DIVIDER);
-
-	charging = strstr(bat_status, CHARGING_STATUS) != NULL;
-	discharging = strstr(bat_status, DISCHARGING_STATUS) != NULL;
-	warning = percentage <= 10;
-
-
-	/* Construct output */
-	if (discharging) {
-		if (rate_output && rate >= rate_threshold) {
-			sprintf(output_part, "%s ", squash_int_to_str(rate));
-			strcat(output, output_part);
+	// We will walk through all battery directories in sysfs filling out structs:
+	dirnum = scandir(BATTERY_PATH, &directories, bat_dir_filter, alphasort);
+	if (dirnum > 0)
+    {
+		for (int i = 0; i < dirnum; i++) {
+			char *battpath;
+			asprintf(&battpath, "%s/%s", BATTERY_PATH, directories[i]->d_name);
+			batteries[i] = process_battery(battpath);
+			prepare_battery_output(batteries[i]);
 		}
-		if (warning) {
-			strcat(output, WARNING_STRING);
-		} else {
-			strcat(output, DISCHARGING_STRING);
-		}
+    }
+	else {
+		/* I assume, the user is quite aware of total battery absence.
+		   Instead of polluting interface by error mesages I prefer to exit
+		   quietly at this point. */
+		if (debug)
+			fprintf(stderr, "%s: no batteries found!\n", program_name);
+		exit(EXIT_FAILURE);
 	}
-	if (charging) {
-		strcat(output, CHARGING_STRING);
+
+
+	char output[255] = "";
+	battery_t *b;
+	for (int i = 0; batteries[i] != NULL; i++) {
+		b = batteries[i];
+		strcat(output, b->output);
+		if (batteries[i+1])
+			strcat(output, " ");
 	}
-	sprintf(output_part, "%d%%", percentage);
-	strcat(output, output_part);
 
 	printf("%s\n", output);
 	exit(EXIT_SUCCESS);

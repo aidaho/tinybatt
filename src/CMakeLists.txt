@@ -16,3 +16,9 @@ install(
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   )
+
+# If you have something else than GCC, consult compiler documentation on
+# flags required to enable c99 standard.
+set(CMAKE_C_FLAGS "-std=c99")
+# The following line should in the future replace explicit flag declaration:
+#set(CMAKE_C_STANDARD_REQUIRED c99)  # this will work only with very recent cmake

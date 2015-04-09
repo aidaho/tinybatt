@@ -18,15 +18,16 @@ something to play with while learning C.
 *   Discharge rate indicator ![discharge-rate](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/discharge-rate.png).
     Sometimes, after s2ram my notebook starts eating through battery really fast, this
     indicator designed to pop up after discharge rate exceeds specified limit (in watts).
+*   Multiple batteries support ![multiple-batteries](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/multiple-batteries.png)
 
 ### Integration
 *   **tmux**: insert `#(/path/to/tinybatt)` somewhere in your status(-left/right) template
 
 ### Installation
 1.  **Build from source:** `tinybatt` is written in pure C and does not require
-    anything above `libc` and `cmake` to build. Run the following from the
+    anything above `libc-dev` and `cmake` to build. Run the following from the
     project root directory: `cmake -G "Unix Makefiles" && make`
-2.  **Build packages:** run `cpack`. You will get DEB, RPM and TGZ packages.`
+2.  **Build packages:** run `make package`. You will get DEB, RPM and TGZ packages.`
 3.  **Install package:**
     * **Debian:** run `sudo dpkg -i tinybatt*.deb`
     * **Red Hat:** run `sudo rpm -i tinybatt*.rpm`
@@ -34,3 +35,14 @@ something to play with while learning C.
 
 ### Notes
     The exact representation of Unicode symbols depend on your fonts.
+
+### Oops, it crashed
+My apologies. In order to help me figure out what's wrong please do the following:
+
+1.  **Build source with debug info:** `cmake -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" && make`
+2.  **Run binary under GDB:** execute `gdb src/tinybatt`. You will be greeted with GDB prompt.
+    Enter `run`, tinybatt will be executed and after it crashes, show me the output of `backtrace` command.
+
+### Changelog
+    * **v0.0.2**: Added support for multiple batteries.
+    * **v0.0.1**: Initial version.
