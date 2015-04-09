@@ -44,5 +44,5 @@ My apologies. In order to help me figure out what's wrong please do the followin
     Enter `run`, tinybatt will be executed and after it crashes, show me the output of `backtrace` command.
 
 ### Changelog
-    * **v0.0.2**: Added support for multiple batteries.
-    * **v0.0.1**: Initial version.
+* **v0.0.2**: Added support for multiple batteries.
+* **v0.0.1**: Initial version.
