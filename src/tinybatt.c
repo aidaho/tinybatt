@@ -56,13 +56,14 @@ void print_help()
 	printf ("\n");
 }
 
-int get_int_from_file(char *filepath) {
-	/*
-	  Reads first string from file with provided filepath,
-	  attempts to interpret it as integer and return to caller.
+int get_int_from_file(char *filepath)
+/*
+  Reads first string from file with provided filepath,
+  attempts to interpret it as integer and return to caller.
 
-	  \param filepath full file path to read from
-	 */
+  \param filepath full file path to read from
+*/
+{
 	FILE *fp;
 	int result;
 	fp = fopen(filepath, "rt");
@@ -73,12 +74,13 @@ int get_int_from_file(char *filepath) {
 	return result;
 }
 
-char * get_first_line_from_file(char *filepath) {
-	/*
-	  Reads and returns first line from file in path.
+char * get_first_line_from_file(char *filepath)
+/*
+  Reads and returns first line from file in path.
 
-	  \param filepath full file path to read from
-	*/
+  \param filepath full file path to read from
+*/
+{
 	size_t n = 0;
 	FILE *fp;
 	char *result = NULL;
@@ -90,8 +92,9 @@ char * get_first_line_from_file(char *filepath) {
 	return result;
 }
 
-char * squash_int_to_str(int n) {
-	/* Converts integer to some (short and rounded) string representation. */
+char * squash_int_to_str(int n)
+/* Converts integer to some (short and rounded) string representation. */
+{
 	char c = 'x', abbrevs[] = DRAW_ABBREVS, *result, *r_ptr, *a_ptr;
 	int words = 0;
 	result = (char *) malloc(MAX_ABBREV_LEN);
