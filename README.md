@@ -11,15 +11,15 @@ gnu toolchain, polling such chain has a bigger footprint and I need
 something to play with while learning C.
 
 ### Features
-*   Battery status indication:
+*   **Battery status indication:**
     * charging ![charging](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/charging.png)
     * discharging ![discharging](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/discharging.png)
     * warning ![warning](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/warning.png)
-*   Discharge rate indicator ![discharge-rate](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/discharge-rate.png).
+*   **Discharge rate indicator** ![discharge-rate](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/discharge-rate.png).
     Sometimes, after s2ram my notebook starts eating through battery really fast, this
     indicator designed to pop up after discharge rate exceeds specified limit (in watts).
-*   Multiple batteries support ![multiple-batteries](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/multiple-batteries.png)
-*   Don't like built in indicators? Define your own with command line arguments! See `tinybatt --help` for details.
+*   **Multiple batteries support!** ![multiple-batteries](https://raw.githubusercontent.com/aidaho/tinybatt/master/screenshots/multiple-batteries.png)
+*   **Don't like built in indicators?** Define your own with command line arguments! See `tinybatt --help` for details.
 
 ### Integration
 *   **tmux**: insert `#(/path/to/tinybatt)` somewhere in your status(-left/right) template
