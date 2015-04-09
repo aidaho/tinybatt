@@ -9,6 +9,7 @@
 #define CHARGING_STATUS "Charging"
 #define DISCHARGING_STATUS "Discharging"
 
+#define MAX_STATUS_STRING_LEN 16  ///< maximum length of status symbol(s) string
 #define CHARGING_STRING "↻"
 #define DISCHARGING_STRING "⚡"
 #define WARNING_STRING "⚠"
@@ -20,7 +21,8 @@
 #define RATE_UNIT "mW"
 #define RATE_DIVIDED_UNIT "W"
 
-#define OUTPUT_BUFFER_LEN 32  ///< maximum lentgh of single abbrev
-#define MAX_ABBREV_LEN 16  ///< maximum lentgh of single abbrev
+#define OUTPUT_BUFFER_LEN 32  ///< buffer for preparing output parts
+#define MAX_ABBREV_LEN 16  ///< maximum length of single abbrev
+#define MAX_ABBREVS_LIST_LEN 255  ///< maximum length of abbrev list
 // Ordered integer abbreviations separated by spaces
-#define DRAW_ABBREVS "➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳"
+#define RATE_ABBREVS "➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳"

@@ -19,6 +19,7 @@
 #include <stdlib.h>  // exit(), EXIT_SUCCESS
 #include <string.h>  // strrchr()
 #include <unistd.h>  // getopt()
+#include <getopt.h>  // getopt()
 #include <math.h>  // ceil()
 #include <dirent.h>  // scandir()
 #include <stdbool.h>
@@ -45,12 +46,16 @@ typedef struct battery_t
 battery_t *batteries[MAX_BATTERY_COUNT];
 bool rate_output = false;  ///< controls display of discharge rate
 int rate_threshold = 0;  ///< rate indicator will appear when value exceeded
-
+char rate_abbrevs[MAX_ABBREVS_LIST_LEN] = RATE_ABBREVS;
+char charging_string[MAX_STATUS_STRING_LEN] = CHARGING_STRING;
+char discharging_string[MAX_STATUS_STRING_LEN] = DISCHARGING_STRING;
+char warning_string[MAX_STATUS_STRING_LEN] = WARNING_STRING;
+int warn_threshold = 10;  ///< threshold for warning indicator
 
 void print_version()
 /* Prints version information. */
 {
-	printf ("\n%s, version %s [-hvw] \n", program_name, VERSION);
+	printf ("\n%s, version %s\n", program_name, VERSION);
 	printf ("Copyright (C) 2015 Sergey Frolov\n");
 	printf ("for more details please visit: https://github.com/aidaho/tinybatt\n");
 	printf ("License: GPLv3: <http://www.gnu.org/licenses/gpl-3.0.html>\n");
@@ -66,12 +71,18 @@ void print_help()
 	printf ("The output is meant to be included in some text-based interface (like tmux)\n");
 	printf ("\n");
 	printf ("command line options:\n");
-	printf (" -v : print version\n");
-	printf (" -h : this help\n");
-	printf (" -r[0..n] : display rate of discharge if it exceeds optional parameter\n");
-	printf (" -d : debug. For developers only.\n");
+	printf (" -v, --version    : print version\n");
+	printf (" -h, --help       : this help\n");
+	printf (" -r[0..n], --rate : display rate of discharge if it exceeds optional parameter\n");
+	printf (" -w[0..n], --warn-threshold : percentage at which to display warning indicator\n");
+	printf (" --charging="",\n");
+	printf (" --discharging="",\n");
+	printf (" --warning=""     : redefine status symbols. Assign empty string to disable.\n");
+	printf (" --rate-abbrevs=\"a b c\" : sequential space-delimeted list of draw abbrevs.\n");
+	printf ("                            Pass an empty list for digital draw representation.\n");
+	printf (" --debug          : for developers only.\n");
 	printf ("\n");
-	printf ("for more details please visit: https://github.com/aidaho\n");
+	printf ("for more details please visit: https://github.com/aidaho/tinybatt\n");
 	printf ("(c) Sergey Frolov, 2015\n");
 	printf ("License: GPLv3\n");
 	printf ("\n");
@@ -116,10 +127,10 @@ char * get_first_line_from_file(char *filepath)
 char * squash_int_to_str(int n)
 /* Converts integer to some (short and rounded) string representation. */
 {
-	char c = 'x', abbrevs[] = DRAW_ABBREVS, *result, *r_ptr, *a_ptr;
+	char c = 'x', *result, *r_ptr, *a_ptr;
 	int words = 0;
 	result = (char *) malloc(MAX_ABBREV_LEN);
-	a_ptr = abbrevs;
+	a_ptr = rate_abbrevs;
 
 	while (words < n && c != '\0') {  // walk through abbrevs
 		r_ptr = result;
@@ -133,7 +144,7 @@ char * squash_int_to_str(int n)
 	}
 
 	// No corresponding abbrev found, fallback:
-	snprintf(result, MAX_ABBREV_LEN, "%d", n);
+	snprintf(result, MAX_ABBREV_LEN, "%d%s", n, RATE_DIVIDED_UNIT);
 	return result;
 }
 
@@ -154,7 +165,7 @@ int bat_dir_filter(const struct dirent *dirent)
 }
 
 int prepare_battery_output(battery_t *bat)
-/* Fills out output field in battery structure */
+/* Fills out output field in battery structure. */
 {
 	char output_part[OUTPUT_BUFFER_LEN] = "";
 
@@ -165,13 +176,13 @@ int prepare_battery_output(battery_t *bat)
 			strcat(bat->output, output_part);
 		}
 		if (bat->warning) {
-			strcat(bat->output, WARNING_STRING);
+			strcat(bat->output, warning_string);
 		} else {
-			strcat(bat->output, DISCHARGING_STRING);
+			strcat(bat->output, discharging_string);
 		}
 	}
 	if (bat->charging) {
-		strcat(bat->output, CHARGING_STRING);
+		strcat(bat->output, charging_string);
 	}
 	snprintf(output_part, OUTPUT_BUFFER_LEN, "%d%%", bat->percentage);
 	strcat(bat->output, output_part);
@@ -202,7 +213,7 @@ battery_t * process_battery(char *battpath)
 
 	bat->charging = strstr(bat->status, CHARGING_STATUS) != NULL;
 	bat->discharging = strstr(bat->status, DISCHARGING_STATUS) != NULL;
-	bat->warning = bat->percentage <= 10;
+	bat->warning = bat->percentage <= warn_threshold;
 
 	return bat;
 }
@@ -217,23 +228,68 @@ int main (int argc, char *argv[])
 
 	char option;
 	opterr = 0;
-	while ((option = getopt(argc, argv, "hvdr::")) != EOF)
-	{
+
+	while (true) {
+		static struct option long_options[] =
+			{
+				{"version",        no_argument,       0, 'v'},
+				{"help",           no_argument,       0, 'h'},
+				{"rate",           optional_argument, 0, 'r'},
+				{"warn-threshold", required_argument, 0, 'w'},
+				{"debug",          no_argument,       0,   0},
+				{"charging",       required_argument, 0,   0},
+				{"discharging",    required_argument, 0,   0},
+				{"warning",        required_argument, 0,   0},
+				{"rate-abbrevs",   required_argument, 0,   0},
+				{0, 0, 0, 0}
+			};
+
+		/* getopt_long stores the option index here. */
+		int option_index = 0;
+
+		option = getopt_long(argc, argv, "hvw:r::",
+							 long_options, &option_index);
+		if (option == -1)
+			break;  // end of options
+
 		switch (option)
 		{
+		case 0:  // handles exclusively long options
+			if (long_options[option_index].name == "debug") {
+				debug = true;
+				break;
+			}
+			if (long_options[option_index].name == "rate-abbrevs") {
+				rate_output = true;
+				snprintf(rate_abbrevs, MAX_ABBREVS_LIST_LEN, "%s", optarg);
+				break;
+			}
+			if (long_options[option_index].name == "charging") {
+				snprintf(charging_string, MAX_STATUS_STRING_LEN, "%s", optarg);
+				break;
+			}
+			if (long_options[option_index].name == "discharging") {
+				snprintf(discharging_string, MAX_STATUS_STRING_LEN, "%s", optarg);
+				break;
+			}
+			if (long_options[option_index].name == "warning") {
+				snprintf(warning_string, MAX_STATUS_STRING_LEN, "%s", optarg);
+				break;
+			}
+			break;
 		case 'v':
 			print_version();
 			exit(EXIT_SUCCESS);
 		case 'h':
 			print_help();
 			exit(EXIT_SUCCESS);
-		case 'd':
-			debug = true;
-			break;
 		case 'r':
 			rate_output = true;
 			if (optarg)
 				rate_threshold = strtol(optarg, NULL, 10);
+			break;
+		case 'w':
+			warn_threshold = strtol(optarg, NULL, 10);
 			break;
 		case '?':
 			fprintf(stderr, "%s: invalid option: %c\n\n", program_name, optopt);
