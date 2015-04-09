@@ -268,10 +268,8 @@ int main (int argc, char *argv[])
 
 
 	char output[255] = "";
-	battery_t *b;
 	for (int i = 0; batteries[i] != NULL; i++) {
-		b = batteries[i];
-		strcat(output, b->output);
+		strcat(output, batteries[i]->output);
 		if (batteries[i+1])
 			strcat(output, " ");
 	}
