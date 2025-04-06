@@ -2,8 +2,11 @@
 #define BATTERY_PATH "/sys/class/power_supply"  ///< path to battery subdirs
 #define BATTERY_DIR_PREFIX "BAT"  // usually they look like 'BAT0', 'BAT1'...
 #define BATTERY_REMAINING_CAPACITY "energy_now"
+#define BATTERY_REMAINING_CAPACITY_ALT "charge_now"
 #define BATTERY_DISCHARGE_RATE "power_now"
+#define BATTERY_DISCHARGE_RATE_ALT "current_now"
 #define BATTERY_LAST_CAPACITY "energy_full"
+#define BATTERY_LAST_CAPACITY_ALT "charge_full"
 #define BATTERY_STATUS "status"
 // We will be looking for these substrings to determine status:
 #define CHARGING_STATUS "Charging"

@@ -1,6 +1,6 @@
 /*
   tinybatt: shows brief one-line battery information.
-  Copyright (C) 2015 Sergey Frolov
+  Copyright (C) 2015 Serhii Frolov
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License version 3 as
@@ -56,7 +56,7 @@ void print_version()
 /* Prints version information. */
 {
 	printf ("\n%s, version %s\n", program_name, VERSION);
-	printf ("Copyright (C) 2015 Sergey Frolov\n");
+	printf ("Copyright (C) 2015 Serhii Frolov\n");
 	printf ("for more details please visit: https://github.com/aidaho/tinybatt\n");
 	printf ("License: GPLv3: <http://www.gnu.org/licenses/gpl-3.0.html>\n");
 	printf ("\n");
@@ -83,7 +83,7 @@ void print_help()
 	printf (" --debug          : for developers only.\n");
 	printf ("\n");
 	printf ("for more details please visit: https://github.com/aidaho/tinybatt\n");
-	printf ("(c) Sergey Frolov, 2015\n");
+	printf ("(c) Serhii Frolov, 2015\n");
 	printf ("License: GPLv3\n");
 	printf ("\n");
 }
@@ -195,10 +195,20 @@ battery_t * process_battery(char *battpath)
 	battery_t *bat = (battery_t *) malloc(sizeof(battery_t));
 
 	asprintf(&fpath, "%s/%s", battpath, BATTERY_REMAINING_CAPACITY);
+	if (access(fpath, F_OK) == -1) {
+		free(fpath);
+		asprintf(&fpath, "%s/%s", battpath, BATTERY_REMAINING_CAPACITY_ALT);
+	}
 	bat->remaining_capacity = get_int_from_file(fpath) / CAPACITY_DIVIDER;
+	free(fpath);
 
 	asprintf(&fpath, "%s/%s", battpath, BATTERY_LAST_CAPACITY);
+	if (access(fpath, F_OK) == -1) {
+		free(fpath);
+		asprintf(&fpath, "%s/%s", battpath, BATTERY_LAST_CAPACITY_ALT);
+	}
 	bat->last_capacity = get_int_from_file(fpath) / CAPACITY_DIVIDER;
+	free(fpath);
 
 	/* I've tried a couple of userspace notifiers and it seems the general
 	 consensus is to round upwards. I guess pulling the cord and watching
@@ -209,7 +219,12 @@ battery_t * process_battery(char *battpath)
 	bat->status = get_first_line_from_file(fpath);
 
 	asprintf(&fpath, "%s/%s", battpath, BATTERY_DISCHARGE_RATE);
+	if (access(fpath, F_OK) == -1) {
+		free(fpath);
+		asprintf(&fpath, "%s/%s", battpath, BATTERY_DISCHARGE_RATE_ALT);
+	}
 	bat->rate = ceil(get_int_from_file(fpath) / RATE_DIVIDER);
+	free(fpath);
 
 	bat->charging = strstr(bat->status, CHARGING_STATUS) != NULL;
 	bat->discharging = strstr(bat->status, DISCHARGING_STATUS) != NULL;

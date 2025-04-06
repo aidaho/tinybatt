@@ -11,3 +11,4 @@ install_manifest.txt
 *.deb
 *.rpm
 *.gz
+.aider*
